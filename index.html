@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Simple Calculator</title>
+  <style>
+    :root {
+      --bg: #0f111a;
+      --panel: #1e2130;
+      --btn: #2a2f55;
+      --btn-alt: #3a3f75;
+      --text: #e8e8ee;
+      --accent: #4cd1ff;
+      --orange: #FF9F1A;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background: linear-gradient(#0a0c15, #0a0c15 60%, #0e1220);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .calculator {
+      width: 320px;
+      border-radius: 16px;
+      background: linear-gradient(#1b2040, #14183b);
+      padding: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.4);
+    }
+
+    .display {
+      width: 100%;
+      height: 68px;
+      background: #0b0f1a;
+      border: 1px solid #33364f;
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 28px;
+      display: flex;
+      align-items: end;
+      justify-content: flex-end;
+      overflow: hidden;
+      word-spacing: 2px;
+    }
+
+    .display .prev {
+      font-size: 14px;
+      color: #a0a0a8;
+      width: 100%;
+      text-align: right;
+      opacity: .9;
+    }
+
+    .display .curr {
+      font-weight: 600;
+      letter-spacing: .5px;
+      line-height: 1.2;
+      word-break: break-all;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button {
+      height: 58px;
+      border-radius: 10px;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform .05s ease;
+      color: white;
+    }
+
+    button:active { transform: scale(0.98); }
+
+    .btn {
+      background: var(--btn);
+    }
+    .btn.alt {
+      background: var(--btn-alt);
+    }
+    .btn.orange {
+      background: var(--orange);
+    }
+    .btn.clear {
+      background: #8b5e00;
+    }
+    .btn.equal {
+      background: #2e9e3f;
+    }
+
+    @media (max-width: 360px) {
+      .calculator { width: 90vw; }
+      .display { height: 62px; font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator" aria-label="Calculator">
+    <div class="display" id="display" aria-live="polite" aria-label="Display">
+      <div class="prev" id="displayPrev"></div>
+      <div class="curr" id="displayCurr">0</div>
+    </div>
+
+    <div class="grid">
+      <button class="btn alt" data-action="clear" aria-label="Clear">C</button>
+      <button class="btn alt" data-action="backspace" aria-label="Backspace">⌫</button>
+      <button class="btn alt" data-action="percent" aria-label="Percent">%</button>
+      <button class="btn orange" data-action="divide" aria-label="Divide">÷</button>
+
+      <button class="btn" data-value="7" aria-label="7">7</button>
+      <button class="btn" data-value="8" aria-label="8">8</button>
+      <button class="btn" data-value="9" aria-label="9">9</button>
+      <button class="btn orange" data-action="operator" aria-label="Divide">÷</button>
+
+      <button class="btn" data-value="4" aria-label="4">4</button>
+      <button class="btn" data-value="5" aria-label="5">5</button>
+      <button class="btn" data-value="6" aria-label="6">6</button>
+      <button class="btn orange" data-action="operator" aria-label="Multiply">×</button>
+
+      <button class="btn" data-value="1" aria-label="1">1</button>
+      <button class="btn" data-value="2" aria-label="2">2</button>
+      <button class="btn" data-value="3" aria-label="3">3</button>
+      <button class="btn orange" data-action="operator" aria-label="Subtract">−</button>
+
+      <button class="btn" data-value="0" aria-label="0" style="grid-column: span 2;"></button>
+      <button class="btn" data-value="." aria-label="Decimal">.</button>
+      <button class="btn orange" data-action="operator" aria-label="Add">+</button>
+
+      <button class="btn clear" data-action="negate" aria-label="Negate">±</button>
+      <button class="btn equal" data-action="equals" aria-label="Equals" style="grid-column: span 3;">=</button>
+    </div>
+  </div>
+
+  <script>
+    // Simple calculator logic
+    const displayPrev = document.getElementById('displayPrev');
+    const displayCurr = document.getElementById('displayCurr');
+    let current = '0';
+    let previous = '';
+    let operator = null;
+    let shouldReset = false;
+
+    function updateDisplay() {
+      displayCurr.textContent = current;
+      displayPrev.textContent = previous ? previous + ' ' : '';
+    }
+
+    function inputDigit(d) {
+      if (shouldReset) {
+        current = d;
+        shouldReset = false;
+      } else {
+        if (current === '0' && d !== '.') current = d;
+        else current += d;
+      }
+      updateDisplay();
+    }
+
+    function setOperator(op) {
+      if (operator && !shouldReset) {
+        compute();
+      } else {
+        previous = current;
+      }
+      operator = op;
+      shouldReset = true;
+      updateDisplay();
+    }
+
+    function compute() {
+      if (!operator) return;
+      const a = parseFloat(previous);
+      const b = parseFloat(current);
+      let result = 0;
+      switch (operator) {
+        case '+': result = a + b; break;
+        case '-': result = a - b; break;
+        case '×': case '*': result = a * b; break;
+        case '÷': case '/': result = b !== 0 ? a / b : 'Error'; break;
+      }
+      current = String(result);
+      previous = '';
+      operator = null;
+      shouldReset = true;
+      updateDisplay();
+    }
+
+    // Event delegation for buttons
+    document.querySelector('.grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      const action = btn.dataset.action;
+      const value = btn.dataset.value;
+
+      if (value !== undefined) {
+        inputDigit(value);
+        return;
+      }
+
+      switch (action) {
+        case 'clear':
+          current = '0';
+          previous = '';
+          operator = null;
+          shouldReset = false;
+          updateDisplay();
+          break;
+        case 'backspace':
+          if (!shouldReset) {
+            current = current.length > 1 ? current.slice(0, -1) : '0';
+            updateDisplay();
+          }
+          break;
+        case 'equals':
+          compute();
+          break;
+        case 'operator':
+          setOperator(btn.textContent);
+          break;
+        case 'negate':
+          if (current !== '0') {
+            current = String(-parseFloat(current));
+            updateDisplay();
+          }
+          break;
+        case 'percent':
+          current = String(parseFloat(current) / 100);
+          updateDisplay();
+          break;
+      }
+    });
+
+    // Keyboard support (optional)
+    window.addEventListener('keydown', (e) => {
+      if (/\d/.test(e.key)) inputDigit(e.key);
+      else if (e.key === '.') inputDigit('.');
+      else if (e.key === '+' || e.key === '-') {
+        setOperator(e.key);
+      } else if (e.key === '*' || e.key === 'x' || e.key === 'X') {
+        setOperator('×');
+      } else if (e.key === '/' || e.key === '÷') {
+        setOperator('÷');
+      } else if (e.key === 'Enter' || e.key === '=') {
+        compute();
+      } else if (e.key === 'Backspace') {
+        // emulate backspace
+        if (!shouldReset) {
+          current = current.length > 1 ? current.slice(0, -1) : '0';
+          updateDisplay();
+        }
+      } else if (e.key === '%') {
+        current = String(parseFloat(current) / 100);
+        updateDisplay();
+      } else if (e.key.toLowerCase() === 'c') {
+        current = '0'; previous = ''; operator = null; shouldReset = false; updateDisplay();
+      }
+    });
+
+    // Initialize
+    updateDisplay();
+  </script>
+</body>
+</html>
